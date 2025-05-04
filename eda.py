@@ -3,34 +3,40 @@ import shutil
 from datetime import datetime
 import pytz
 
-# CHANGE THIS: your folder containing the .avro files
-SOURCE_DIR = r'C:\path\to\your\files'
+# Base directory where all k folders are located
+BASE_DIR = '/mnt/c/Users/amyhy/OneDrive/Desktop/HUM00220842/kerim'
 
-# Optional: folder where sorted files will go
-DEST_DIR = SOURCE_DIR  # You can change this if you want output elsewhere
-
-# Time zone setup
+# Timezone setup
 utc = pytz.utc
 est = pytz.timezone('US/Eastern')
 
-# Go through each file
-for filename in os.listdir(SOURCE_DIR):
-    if filename.endswith('.avro'):
-        full_path = os.path.join(SOURCE_DIR, filename)
-        
-        # Get last modified time in UTC
-        mod_time = datetime.fromtimestamp(os.path.getmtime(full_path), tz=utc)
-        
-        # Convert to EST
-        est_time = mod_time.astimezone(est)
-        date_folder = est_time.strftime('%Y-%m-%d')
-        
-        # Create destination folder
-        dest_path = os.path.join(DEST_DIR, date_folder)
-        os.makedirs(dest_path, exist_ok=True)
-        
-        # Move the file
-        shutil.move(full_path, os.path.join(dest_path, filename))
-        print(f'Moved {filename} → {date_folder}')
+# Go through each folder in BASE_DIR
+for folder_name in os.listdir(BASE_DIR):
+    folder_path = os.path.join(BASE_DIR, folder_name)
+    
+    # Only process folders that start with 'k' and are directories
+    if os.path.isdir(folder_path) and folder_name.startswith('k') and '_FINAL' not in folder_name:
+        print(f"Processing {folder_name}...")
+        final_folder = os.path.join(BASE_DIR, folder_name + '_FINAL')
+        os.makedirs(final_folder, exist_ok=True)
 
-print('All files sorted by EST date!')
+        # Look at all .avro files in the current folder
+        for file in os.listdir(folder_path):
+            if file.endswith('.avro'):
+                file_path = os.path.join(folder_path, file)
+                
+                # Get the last modified time and convert to EST
+                mod_time_utc = datetime.fromtimestamp(os.path.getmtime(file_path), tz=utc)
+                mod_time_est = mod_time_utc.astimezone(est)
+                date_folder = mod_time_est.strftime('%Y-%m-%d')
+                
+                # Make dated subfolder inside *_FINAL
+                dated_path = os.path.join(final_folder, date_folder)
+                os.makedirs(dated_path, exist_ok=True)
+                
+                # Move file
+                dest_path = os.path.join(dated_path, file)
+                shutil.move(file_path, dest_path)
+                print(f"  → Moved {file} to {folder_name}_FINAL/{date_folder}/")
+
+print("All files reorganized by EST date.")
